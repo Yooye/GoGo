@@ -28,4 +28,5 @@ message GetHouseRequest {
 message GetHouseResponse {
   string id = 1;
   House data = 2;
+  string msg = 3;
 }

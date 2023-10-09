@@ -3,8 +3,10 @@ package main
 import (
 	"context"
 	"fmt"
-	"google.golang.org/grpc"
 	house_pb "server/proto/gen/go"
+
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
 )
 
 func main() {
@@ -14,7 +16,14 @@ func main() {
 	}
 	defer connect.Close()
 	c := house_pb.NewHouseServiceClient(connect)
-	r, err := c.GetHouse(context.Background(), &house_pb.GetHouseRequest{Id: "111"})
+	//1. create metadata
+	md := metadata.New(map[string]string{
+		"auth": "123",
+	})
+	//2. create a new context with some metadata
+	ctx := metadata.NewOutgoingContext(context.Background(), md)
+	//3. send request within metadata
+	r, err := c.GetHouse(ctx, &house_pb.GetHouseRequest{Id: "111"})
 	if err != nil {
 		panic(err)
 	}
