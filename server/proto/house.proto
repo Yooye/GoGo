@@ -1,0 +1,31 @@
+syntax = 'proto3';
+package cargo;
+option go_package="./gen/go;house_pb";
+message HouseRoom {
+  string room_name = 1;
+  float room_area = 2;
+}
+enum HouseState {
+  NORMAL = 0;
+  GOOD = 1;
+  BAD = 2;
+}
+message House {
+  string owner_name = 1;
+  int64 type = 2;
+  float area = 3;
+  HouseRoom master_room = 4;
+  repeated HouseRoom other_rooms = 5;
+  HouseState state = 6;
+}
+
+service HouseService {
+  rpc GetHouse (GetHouseRequest) returns (GetHouseResponse){}
+}
+message GetHouseRequest {
+  string id = 1;
+}
+message GetHouseResponse {
+  string id = 1;
+  House data = 2;
+}
