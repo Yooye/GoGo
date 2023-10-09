@@ -46,7 +46,12 @@ func (*Service) GetHouse(ctx context.Context, req *house_pb.GetHouseRequest) (*h
 }
 
 func main() {
-	g := grpc.NewServer()
+	interceptor := func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp any, err error) {
+		fmt.Printf("服务端拦截器")
+		return handler(ctx, req)
+	}
+	opt := grpc.UnaryInterceptor(interceptor)
+	g := grpc.NewServer(opt)
 	house_pb.RegisterHouseServiceServer(g, &Service{})
 	lis, err := net.Listen("tcp", "0.0.0.0:8088")
 	if err != nil {
