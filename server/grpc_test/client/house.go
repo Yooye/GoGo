@@ -5,14 +5,19 @@ import (
 	"fmt"
 	house_pb "server/proto/gen/go"
 
-	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
+
+	"google.golang.org/grpc"
 )
 
 func main() {
 	// 1. create interceptor function
 	interceptor := func(ctx context.Context, method string, req, reply any, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
 		fmt.Printf("客户端请求拦截器\n")
+		md := metadata.New(map[string]string{
+			"auth": "1234",
+		})
+		ctx = metadata.NewOutgoingContext(context.Background(), md)
 		err := invoker(ctx, method, req, reply, cc, opts...)
 		return err
 	}
@@ -27,14 +32,7 @@ func main() {
 	}
 	defer connect.Close()
 	c := house_pb.NewHouseServiceClient(connect)
-	//1. create metadata
-	md := metadata.New(map[string]string{
-		"auth": "123",
-	})
-	//2. create a new context with some metadata
-	ctx := metadata.NewOutgoingContext(context.Background(), md)
-	//3. send request within metadata
-	r, err := c.GetHouse(ctx, &house_pb.GetHouseRequest{Id: "111"})
+	r, err := c.GetHouse(context.Background(), &house_pb.GetHouseRequest{Id: "111"})
 	if err != nil {
 		panic(err)
 	}

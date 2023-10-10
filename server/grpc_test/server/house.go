@@ -6,6 +6,9 @@ import (
 	"net"
 	house_pb "server/proto/gen/go"
 
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+
 	"google.golang.org/grpc/metadata"
 
 	"google.golang.org/grpc"
@@ -16,38 +19,32 @@ type Service struct {
 }
 
 func (*Service) GetHouse(ctx context.Context, req *house_pb.GetHouseRequest) (*house_pb.GetHouseResponse, error) {
-	// 1. get the metadata from context
-	md, ok := metadata.FromIncomingContext(ctx)
-	data := &house_pb.House{}
-	msg := "auth验证失败"
-	if ok {
-		fmt.Println("收到了metadata", md["auth"])
-		//2. use metadata to auth something
-		if md["auth"][0] == "123" {
-			data = &house_pb.House{
-				OwnerName: "三丰",
-				Area:      99.8,
-				Type:      1,
-				MasterRoom: &house_pb.HouseRoom{
-					RoomName: "主卧",
-					RoomArea: 20.5,
-				},
-				State: 1,
-			}
-			msg = "auth验证成功"
-		}
-	}
-	//3. send authed data to client
 	return &house_pb.GetHouseResponse{
-		Id:   req.Id,
-		Data: data,
-		Msg:  msg,
+		Id: req.Id,
+		Data: &house_pb.House{
+			OwnerName: "三丰",
+			Area:      99.8,
+			Type:      1,
+			MasterRoom: &house_pb.HouseRoom{
+				RoomName: "主卧",
+				RoomArea: 20.5,
+			},
+			State: 1,
+		},
+		Msg: "auth验证成功,并下发了数据",
 	}, nil
 }
 
 func main() {
 	interceptor := func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp any, err error) {
-		fmt.Printf("服务端拦截器")
+		md, ok := metadata.FromIncomingContext(ctx)
+		if !ok {
+			return resp, status.Error(codes.Unauthenticated, "未携带auth信息")
+		}
+		fmt.Printf("服务端拦截器", md)
+		if md["auth"][0] != "123" {
+			return resp, status.Error(codes.Unauthenticated, "auth错误")
+		}
 		return handler(ctx, req)
 	}
 	opt := grpc.UnaryInterceptor(interceptor)
