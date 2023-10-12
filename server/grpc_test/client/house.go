@@ -5,27 +5,25 @@ import (
 	"fmt"
 	house_pb "server/proto/gen/go"
 
-	"google.golang.org/grpc/metadata"
-
 	"google.golang.org/grpc"
 )
 
+type customCredential struct {
+}
+
+func (c customCredential) GetRequestMetadata(ctx context.Context, uri ...string) (map[string]string, error) {
+	return map[string]string{
+		"auth": "1234",
+	}, nil
+}
+func (c customCredential) RequireTransportSecurity() bool {
+	return false
+}
+
 func main() {
-	// 1. create interceptor function
-	interceptor := func(ctx context.Context, method string, req, reply any, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
-		fmt.Printf("客户端请求拦截器\n")
-		md := metadata.New(map[string]string{
-			"auth": "1234",
-		})
-		ctx = metadata.NewOutgoingContext(context.Background(), md)
-		err := invoker(ctx, method, req, reply, cc, opts...)
-		return err
-	}
-	// 2. create a client Interceptor
 	var opts []grpc.DialOption
 	opts = append(opts, grpc.WithInsecure())
-	opts = append(opts, grpc.WithUnaryInterceptor(interceptor))
-	// 3. set the Interceptor to grpc
+	opts = append(opts, grpc.WithPerRPCCredentials(customCredential{}))
 	connect, err := grpc.Dial("127.0.0.1:8088", opts...)
 	if err != nil {
 		panic(err)
